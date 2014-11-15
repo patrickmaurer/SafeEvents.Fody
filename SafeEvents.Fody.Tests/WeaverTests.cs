@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
@@ -19,10 +20,8 @@ namespace SafeEvents.Fody.Tests
 		public void Setup()
 		{
 			var projectPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, @"..\..\..\AssemblyToProcess\AssemblyToProcess.csproj"));
-			_assemblyPath = Path.Combine(Path.GetDirectoryName(projectPath), @"bin\Debug\AssemblyToProcess.dll");
-#if (!DEBUG)
-			assemblyPath = assemblyPath.Replace("Debug", "Release");
-#endif
+			_assemblyPath = Path.Combine(Path.GetDirectoryName(projectPath), @"bin\Release\AssemblyToProcess.dll");
+			SetDebugPath();
 
 			_newAssemblyPath = _assemblyPath.Replace(".dll", "2.dll");
 			File.Copy(_assemblyPath, _newAssemblyPath, true);
@@ -39,6 +38,12 @@ namespace SafeEvents.Fody.Tests
 			_assembly = Assembly.LoadFile(_newAssemblyPath);
 		}
 
+		[Conditional("DEBUG")]
+		private void SetDebugPath()
+		{
+			_assemblyPath = _assemblyPath.Replace("Release", "Debug");
+		}
+
 		[Test]
 		public void ValidateEventHandlerProducesNoNullReferenceException()
 		{
@@ -50,7 +55,7 @@ namespace SafeEvents.Fody.Tests
 			Assert.That(call, Throws.Nothing);
 		}
 
-#if(DEBUG)
+#if DEBUG
 		[Test]
 		public void PeVerify()
 		{
