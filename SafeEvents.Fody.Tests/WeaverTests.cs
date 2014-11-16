@@ -66,12 +66,10 @@ namespace SafeEvents.Fody.Tests
 			Assert.That(call, Throws.Nothing);
 		}
 
-#if DEBUG
 		[Test]
 		public void PeVerify()
 		{
 			Verifier.Verify(_assemblyPath, _newAssemblyPath);
 		}
-#endif
 	}
 }
