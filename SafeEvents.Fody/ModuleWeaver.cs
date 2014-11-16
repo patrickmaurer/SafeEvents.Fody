@@ -84,19 +84,26 @@ namespace SafeEvents.Fody
 
 		private MethodReference GetEventHandlerInvokeMethod(EventDefinition eventToWeave)
 		{
-			return eventToWeave.EventType.Resolve().Methods.First(m => m.Name == "Invoke");
+			return eventToWeave.EventType.Resolve().Methods.Single(m => m.Name == "Invoke");
 		}
 
 		private MethodReference GetEventHandlerConstructor(EventDefinition eventToWeave)
 		{
 			TypeReference eventType = eventToWeave.EventType;
-			MethodDefinition ctor = eventType.Resolve().GetConstructors().First();
+			MethodReference ctor = eventType.Resolve().GetConstructors().Single();
+
+			if (eventType.IsGenericInstance)
+			{
+				var genericType = (GenericInstanceType) eventType;
+				ctor = ctor.MakeHostInstanceGeneric(genericType.GenericArguments);
+			}
+
 			return ModuleDefinition.Import(ctor);
 		}
 
 		private FieldReference GetEventField(EventDefinition eventToWeave)
 		{
-			return eventToWeave.DeclaringType.Fields.First(f => f.Name == eventToWeave.Name);
+			return eventToWeave.DeclaringType.Fields.Single(f => f.Name == eventToWeave.Name);
 		}
 	}
 }

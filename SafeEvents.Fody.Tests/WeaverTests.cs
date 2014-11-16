@@ -55,6 +55,17 @@ namespace SafeEvents.Fody.Tests
 			Assert.That(call, Throws.Nothing);
 		}
 
+		[Test]
+		public void ValidateEventHandlerOfTProducesNoNullReferenceException()
+		{
+			var type = _assembly.GetType("AssemblyToProcess.GenericEventHandler");
+			var instance = (dynamic)Activator.CreateInstance(type);
+
+			TestDelegate call = () => instance.RaiseMyEvent();
+
+			Assert.That(call, Throws.Nothing);
+		}
+
 #if DEBUG
 		[Test]
 		public void PeVerify()

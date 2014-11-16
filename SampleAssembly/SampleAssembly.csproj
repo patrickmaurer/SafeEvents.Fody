@@ -36,6 +36,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NonVoid.cs" />
+    <Compile Include="GenericEvent.cs" />
     <Compile Include="StaticHandler.cs" />
     <Compile Include="LambdaHandler.cs" />
     <Compile Include="DelegateHandler.cs" />
