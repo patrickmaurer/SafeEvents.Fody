@@ -34,7 +34,9 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GenericEventHandlerGenericArgument.cs" />
     <Compile Include="GenericEventHandler.cs" />
+    <Compile Include="TwoEvents.cs" />
     <Compile Include="SimpleEventHandler.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -28,22 +28,25 @@ namespace SafeEvents.Fody
 		{
 			_typeSystem = ModuleDefinition.TypeSystem;
 
-			GetEventsToWeave().ToList().ForEach(WeaveEvent);
-		}
-
-		private void WeaveEvent(EventDefinition eventDefinition)
-		{
-			LogInfo("Weaving event '" + eventDefinition.DeclaringType.FullName + "." + eventDefinition.Name + "'");
-
-			var method = AddStaticEventHandlerMethod(eventDefinition.DeclaringType, GetEventHandlerInvokeMethod(eventDefinition).Parameters);
-			InitializeEventWithStaticHandler(eventDefinition, method);
-
-			LogInfo("Weaving event done");
+			GetEventsToWeave().GroupBy(e => e.DeclaringType).ForEach(WeaveType);
 		}
 
 		private IEnumerable<EventDefinition> GetEventsToWeave()
 		{
 			return ModuleDefinition.Types.SelectMany(t => t.Events);
+		}
+
+		private void WeaveType(IGrouping<TypeDefinition, EventDefinition> eventsToWeaveForType)
+		{
+			LogInfo("Start weaving type '" + eventsToWeaveForType.Key.FullName + "'");
+
+			var method = AddStaticEventHandlerMethod(eventsToWeaveForType.Key, GetEventHandlerInvokeMethod(eventsToWeaveForType.First()).Parameters);
+			foreach (var eventDefinition in eventsToWeaveForType)
+			{
+				WeaveEvent(eventDefinition, method);
+			}
+
+			LogInfo("Done weaving type '" + eventsToWeaveForType.Key.FullName + "'");
 		}
 
 		private MethodReference AddStaticEventHandlerMethod(TypeDefinition typeToWeave, IEnumerable<ParameterDefinition> parameters)
@@ -53,6 +56,7 @@ namespace SafeEvents.Fody
 			int number = 0;
 			foreach (ParameterDefinition parameter in parameters)
 			{
+				//parameter.ParameterType is ignored for simplicity, use System.Object for all parameters
 				method.Parameters.Add(new ParameterDefinition("a" + (++number), ParameterAttributes.In, _typeSystem.Object));
 			}
 
@@ -64,8 +68,10 @@ namespace SafeEvents.Fody
 			return method;
 		}
 
-		private void InitializeEventWithStaticHandler(EventDefinition eventToWeave, MethodReference handlerMethod)
+		private void WeaveEvent(EventDefinition eventToWeave, MethodReference handlerMethod)
 		{
+			LogInfo("Start weaving event '" + eventToWeave.FullName + "'");
+
 			var method = eventToWeave.DeclaringType.GetConstructors().First();
 			var processor = method.Body.GetILProcessor();
 			var firstInstruction = method.Body.Instructions.First();
@@ -80,6 +86,8 @@ namespace SafeEvents.Fody
 			processor.InsertBefore(firstInstruction, Instruction.Create(OpCodes.Newobj, GetEventHandlerConstructor(eventToWeave)));
 			//set event to instance of delegate
 			processor.InsertBefore(firstInstruction, Instruction.Create(OpCodes.Stfld, GetEventField(eventToWeave)));
+
+			LogInfo("Done weaving event '" + eventToWeave.FullName + "'");
 		}
 
 		private MethodReference GetEventHandlerInvokeMethod(EventDefinition eventToWeave)
@@ -94,7 +102,7 @@ namespace SafeEvents.Fody
 
 			if (eventType.IsGenericInstance)
 			{
-				var genericType = (GenericInstanceType) eventType;
+				var genericType = (GenericInstanceType)eventType;
 				ctor = ctor.MakeHostInstanceGeneric(genericType.GenericArguments);
 			}
 

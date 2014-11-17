@@ -67,6 +67,28 @@ namespace SafeEvents.Fody.Tests
 		}
 
 		[Test]
+		public void ValidateEventHandlerOfEventArgsOfTProducesNoNullReferenceException()
+		{
+			var type = _assembly.GetType("AssemblyToProcess.GenericEventHandlerGenericArgument");
+			var instance = (dynamic)Activator.CreateInstance(type);
+
+			TestDelegate call = () => instance.RaiseMyEvent();
+
+			Assert.That(call, Throws.Nothing);
+		}
+
+		[Test]
+		public void ValidateTwoEventHandlersNoNullReferenceException()
+		{
+			var type = _assembly.GetType("AssemblyToProcess.TwoEvents");
+			var instance = (dynamic)Activator.CreateInstance(type);
+
+			TestDelegate call = () => instance.RaiseMyEvents();
+
+			Assert.That(call, Throws.Nothing);
+		}
+
+		[Test]
 		public void PeVerify()
 		{
 			Verifier.Verify(_assemblyPath, _newAssemblyPath);
