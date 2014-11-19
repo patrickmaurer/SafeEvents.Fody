@@ -50,9 +50,7 @@ namespace SafeEvents.Fody.Tests
 			var type = _assembly.GetType("AssemblyToProcess.SimpleEventHandler");
 			var instance = (dynamic)Activator.CreateInstance(type);
 
-			TestDelegate call = () => instance.RaiseMyEvent();
-
-			Assert.That(call, Throws.Nothing);
+			AssertRaiseEventThrowsNothing(instance);
 		}
 
 		[Test]
@@ -61,9 +59,7 @@ namespace SafeEvents.Fody.Tests
 			var type = _assembly.GetType("AssemblyToProcess.GenericEventHandler");
 			var instance = (dynamic)Activator.CreateInstance(type);
 
-			TestDelegate call = () => instance.RaiseMyEvent();
-
-			Assert.That(call, Throws.Nothing);
+			AssertRaiseEventThrowsNothing(instance);
 		}
 
 		[Test]
@@ -72,9 +68,7 @@ namespace SafeEvents.Fody.Tests
 			var type = _assembly.GetType("AssemblyToProcess.GenericEventHandlerGenericArgument");
 			var instance = (dynamic)Activator.CreateInstance(type);
 
-			TestDelegate call = () => instance.RaiseMyEvent();
-
-			Assert.That(call, Throws.Nothing);
+			AssertRaiseEventThrowsNothing(instance);
 		}
 
 		[Test]
@@ -83,8 +77,21 @@ namespace SafeEvents.Fody.Tests
 			var type = _assembly.GetType("AssemblyToProcess.TwoEvents");
 			var instance = (dynamic)Activator.CreateInstance(type);
 
-			TestDelegate call = () => instance.RaiseMyEvents();
+			AssertRaiseEventThrowsNothing(instance);
+		}
 
+		[Test]
+		public void ValidateTwoEventHandlersDifferentSignatureNoNullReferenceException()
+		{
+			var type = _assembly.GetType("AssemblyToProcess.TwoDifferentEvents");
+			var instance = (dynamic)Activator.CreateInstance(type);
+
+			AssertRaiseEventThrowsNothing(instance);
+		}
+
+		private void AssertRaiseEventThrowsNothing(dynamic instance)
+		{
+			TestDelegate call = () => instance.RaiseEvent();
 			Assert.That(call, Throws.Nothing);
 		}
 

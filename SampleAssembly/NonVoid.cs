@@ -8,9 +8,9 @@ namespace SampleAssembly
 	{
 		public event IsThisPossible MyEvent = delegate { return "Hello"; };
 
-		public void RaiseEvent()
+		public string RaiseEvent()
 		{
-			var result = MyEvent(this, EventArgs.Empty);
+			return MyEvent(this, EventArgs.Empty);
 		}
 	}
 }

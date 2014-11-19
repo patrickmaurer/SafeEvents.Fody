@@ -7,7 +7,7 @@ namespace AssemblyToProcess
 	{
 		public event EventHandler<CancelEventArgs> MyEvent;
 
-		public void RaiseMyEvent()
+		public void RaiseEvent()
 		{
 			MyEvent(this, new CancelEventArgs(false));
 		}

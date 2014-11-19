@@ -8,7 +8,7 @@ namespace AssemblyToProcess
 
 		public event EventHandler MyEvent2;
 
-		public void RaiseMyEvents()
+		public void RaiseEvent()
 		{
 			MyEvent1(this, EventArgs.Empty);
 			MyEvent2(this, EventArgs.Empty);

@@ -16,7 +16,7 @@ namespace AssemblyToProcess
 	{
 		public event EventHandler<EventArgs<string>> MyEvent;
 
-		public void RaiseMyEvent()
+		public void RaiseEvent()
 		{
 			MyEvent(this, new EventArgs<string>("Hello"));
 		}
