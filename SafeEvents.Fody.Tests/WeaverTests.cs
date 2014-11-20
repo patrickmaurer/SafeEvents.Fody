@@ -89,6 +89,15 @@ namespace SafeEvents.Fody.Tests
 			AssertRaiseEventThrowsNothing(instance);
 		}
 
+		[Test]
+		public void ValidateValueTypeEventHandlersNoNullReferenceException()
+		{
+			var type = _assembly.GetType("AssemblyToProcess.ValueTypeEventHandler");
+			var instance = (dynamic)Activator.CreateInstance(type);
+
+			AssertRaiseEventThrowsNothing(instance);
+		}
+
 		private void AssertRaiseEventThrowsNothing(dynamic instance)
 		{
 			TestDelegate call = () => instance.RaiseEvent();

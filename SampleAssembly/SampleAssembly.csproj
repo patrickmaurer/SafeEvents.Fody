@@ -43,6 +43,9 @@
     <Compile Include="LambdaHandler.cs" />
     <Compile Include="DelegateHandler.cs" />
     <Compile Include="NoHandler.cs" />
+    <Compile Include="ValueTypes.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

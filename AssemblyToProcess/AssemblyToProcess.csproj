@@ -38,6 +38,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ValueTypeEventHandler.cs" />
     <Compile Include="GenericEventHandlerGenericArgument.cs" />
     <Compile Include="GenericEventHandler.cs" />
     <Compile Include="TwoDifferentEvents.cs" />

@@ -44,42 +44,57 @@ namespace SafeEvents.Fody
 
 			(from e in eventsToWeaveForType
 			 let invokeMethod = GetEventHandlerInvokeMethod(e)
-			 group e by invokeMethod.Parameters.Count
+			 let parameterTypes = invokeMethod.Parameters.Select(GetParameterTypeForHandlerMethod)
+			 group e by parameterTypes.Select(pt => pt.FullName).Aggregate((current, next) => current + "#" + next)
 				 into g
 				 orderby g.Key ascending
 				 select new
 				 {
-					 ParameterCount = g.Key,
+					 GroupingKey = g.Key,
+					 ParameterTypes = GetEventHandlerInvokeMethod(g.First()).Parameters.Select(GetParameterTypeForHandlerMethod),
 					 EventsToWeave = g.AsEnumerable()
 				 })
-				.ForEach(e => WeaveEventGroup(eventsToWeaveForType.Key, e.EventsToWeave, e.ParameterCount));
+				.ForEach(e => WeaveEventGroup(eventsToWeaveForType.Key, e.EventsToWeave, e.ParameterTypes));
 		}
 
-		private void WeaveEventGroup(TypeDefinition type, IEnumerable<EventDefinition> eventsToWeave, int parameterCount)
+		private TypeReference GetParameterTypeForHandlerMethod(ParameterDefinition parameter)
 		{
-			LogInfo("Weaving events with " + parameterCount + " parameters");
+			return IsValueType(parameter.ParameterType)
+				? parameter.ParameterType
+				: _typeSystem.Object;
+		}
 
-			var method = AddStaticEventHandlerMethod(type, parameterCount);
+		private bool IsValueType(TypeReference typeReference)
+		{
+			TypeDefinition typeDefinition = typeReference.Resolve();
+			return typeDefinition != null && typeDefinition.IsValueType;
+		}
+
+		private void WeaveEventGroup(TypeDefinition type, IEnumerable<EventDefinition> eventsToWeave, IEnumerable<TypeReference> parameterTypes)
+		{
+			var method = AddStaticEventHandlerMethod(type, parameterTypes);
 			foreach (var eventDefinition in eventsToWeave)
 			{
 				WeaveEvent(eventDefinition, method);
 			}
 		}
 
-		private MethodReference AddStaticEventHandlerMethod(TypeDefinition typeToWeave, int parameterCount)
+		private MethodReference AddStaticEventHandlerMethod(TypeDefinition typeToWeave, IEnumerable<TypeReference> parameterTypes)
 		{
-			LogInfo("Adding static method with " + parameterCount + " parameters");
 			var method = new MethodDefinition("<.ctor>f__0", MethodAttributes.Private | MethodAttributes.Static, _typeSystem.Void);
 
-			foreach (int number in Enumerable.Range(1, parameterCount))
+			int number = 0;
+			foreach (TypeReference parameterType in parameterTypes)
 			{
-				method.Parameters.Add(new ParameterDefinition("a" + number, ParameterAttributes.In, _typeSystem.Object));
+				method.Parameters.Add(new ParameterDefinition("a" + (++number), ParameterAttributes.In, parameterType));
 			}
 
 			var processor = method.Body.GetILProcessor();
 			processor.Emit(OpCodes.Nop);
 			processor.Emit(OpCodes.Ret);
 			typeToWeave.Methods.Add(method);
+
+			LogInfo("Adding static method with " + method.Parameters.Count + " parameters");
 
 			return method;
 		}
