@@ -42,32 +42,52 @@ namespace SafeEvents.Fody
 		{
 			LogInfo("Weaving type '" + eventsToWeaveForType.Key.FullName + "'");
 
-			(from e in eventsToWeaveForType
-			 let invokeMethod = GetEventHandlerInvokeMethod(e)
-			 let parameterTypes = invokeMethod.Parameters.Select(GetParameterTypeForHandlerMethod)
-			 group e by parameterTypes.Select(pt => pt.FullName).Aggregate((current, next) => current + "#" + next)
+			var eventSignatures = from e in eventsToWeaveForType
+								  let invokeMethod = GetEventHandlerInvokeMethod(e)
+								  let parameterTypes = GetParameterTypes(e, invokeMethod)
+								  select new
+								  {
+									  Event = e,
+									  ParameterTypes = parameterTypes
+								  };
+
+			(from eventSignature in eventSignatures
+			 group eventSignature by eventSignature.ParameterTypes.Select(pt => pt.FullName).Aggregate((current, next) => current + "#" + next)
 				 into g
 				 orderby g.Key ascending
 				 select new
 				 {
 					 GroupingKey = g.Key,
-					 ParameterTypes = GetEventHandlerInvokeMethod(g.First()).Parameters.Select(GetParameterTypeForHandlerMethod),
-					 EventsToWeave = g.AsEnumerable()
+					 g.First().ParameterTypes,
+					 EventsToWeave = g.Select(e => e.Event)
 				 })
 				.ForEach(e => WeaveEventGroup(eventsToWeaveForType.Key, e.EventsToWeave, e.ParameterTypes));
 		}
 
-		private TypeReference GetParameterTypeForHandlerMethod(ParameterDefinition parameter)
+		private IEnumerable<TypeReference> GetParameterTypes(EventDefinition eventToWeave, MethodDefinition invokeMethod)
 		{
-			return IsValueType(parameter.ParameterType)
-				? parameter.ParameterType
-				: _typeSystem.Object;
+			return invokeMethod.Parameters.Select(p => GetParameterType(eventToWeave, p));
 		}
 
-		private bool IsValueType(TypeReference typeReference)
+		private TypeReference GetParameterType(EventDefinition eventToWeave, ParameterDefinition parameter)
 		{
-			TypeDefinition typeDefinition = typeReference.Resolve();
-			return typeDefinition != null && typeDefinition.IsValueType;
+			TypeDefinition typeDefinition = parameter.ParameterType.Resolve();
+			if (typeDefinition != null && typeDefinition.IsValueType)
+			{
+				return typeDefinition;
+			}
+
+			if (parameter.ParameterType.IsGenericParameter)
+			{
+				var genericParameter = (GenericParameter)parameter.ParameterType;
+
+				TypeReference genericArgumentType = ((GenericInstanceType)eventToWeave.EventType).GenericArguments[genericParameter.Position];
+				if (genericArgumentType != null && genericArgumentType.IsValueType)
+				{
+					return ModuleDefinition.Import(genericArgumentType);
+				}
+			}
+			return _typeSystem.Object;
 		}
 
 		private void WeaveEventGroup(TypeDefinition type, IEnumerable<EventDefinition> eventsToWeave, IEnumerable<TypeReference> parameterTypes)
@@ -119,7 +139,7 @@ namespace SafeEvents.Fody
 			processor.InsertBefore(firstInstruction, Instruction.Create(OpCodes.Stfld, GetEventField(eventToWeave)));
 		}
 
-		private MethodReference GetEventHandlerInvokeMethod(EventDefinition eventToWeave)
+		private MethodDefinition GetEventHandlerInvokeMethod(EventDefinition eventToWeave)
 		{
 			return eventToWeave.EventType.Resolve().Methods.Single(m => m.Name == "Invoke");
 		}
